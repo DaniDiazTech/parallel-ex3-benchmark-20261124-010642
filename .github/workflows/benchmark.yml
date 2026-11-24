@@ -1,0 +1,28 @@
+name: Exercise 3 benchmark
+on: [push]
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Report runner and Java
+        run: |
+          nproc
+          java -version
+      - name: Run supplied JUnit tests for both variants
+        shell: bash
+        run: |
+          cd exercise
+          jars='pcdp-core-0.0.4-SNAPSHOT.jar:junit-4.12.jar:hamcrest-core-1.3.jar'
+          status=0
+          for variant in chunked row; do
+            echo "=== $variant ==="
+            output="classes-$variant"
+            mkdir "$output"
+            javac -cp "$jars" -d "$output" "src/main/java/co/edu/unal/paralela/package-info.java" "$([[ "$variant" == chunked ]] && echo src/main/java/co/edu/unal/paralela/MatrixMultiply.java || echo ../row/MatrixMultiply.java)" src/test/java/co/edu/unal/paralela/MatrixMultiplyTest.java
+            java -ea -cp "$output:$jars" junit.textui.TestRunner co.edu.unal.paralela.MatrixMultiplyTest || status=1
+          done
+          exit "$status"
